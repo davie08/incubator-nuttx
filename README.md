@@ -2,7 +2,9 @@
 
 环境准备:
 
-    xtensa-esp32-elf-gcc 编译器，可以从esp idf工程(https://github.com/espressif/esp-idf.git)里的install.sh安装。
+    xtensa-esp32-elf-gcc 编译器，可以从esp idf工程(https://github.com/espressif/esp-idf.git)里的install.sh安装，
+    或直接去https://github.com/espressif/crosstool-NG/releases下载。
+    
     本地CP2104串口驱动，插上micro usb后，本地应能看到诸如/dev/tty.SLAB_USBtoUART的串口节点。
     
     

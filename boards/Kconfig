@@ -225,6 +225,15 @@ config ARCH_BOARD_ESP32_DEVKITC
 		of two CPUs is symmetric, meaning they use the same addresses to
 		access the same memory.
 
+config ARCH_BOARD_TTGO_TWATCH_ESP32
+	bool "ttgo watch of esp32"
+	depends on ARCH_CHIP_ESP32WROOM32 || ARCH_CHIP_ESP32WROOM32_8MB || ARCH_CHIP_ESP32WROOM32_16MB || ARCH_CHIP_ESP32WROVER || ARCH_CHIP_ESP32SOLO1
+	select ARCH_HAVE_LEDS
+	select ARCH_HAVE_BUTTONS
+	select ARCH_HAVE_IRQBUTTONS if ESP32_GPIO_IRQ
+	---help---
+		https://github.com/Xinyuan-LilyGO/TTGO_TWatch_Library.
+
 config ARCH_BOARD_ESP32_ETHERNETKIT
 	bool "Espressif ESP32 Ethernet Kit"
 	depends on ARCH_CHIP_ESP32WROVER
@@ -2345,6 +2354,7 @@ config ARCH_BOARD
 	default "emw3162"                  if ARCH_BOARD_EMW3162
 	default "quickfeather"             if ARCH_BOARD_QUICKFEATHER
 	default "esp32-devkitc"            if ARCH_BOARD_ESP32_DEVKITC
+	default "ttgo_twatch_esp32"		   if ARCH_BOARD_TTGO_TWATCH_ESP32
 	default "esp32-ethernet-kit"       if ARCH_BOARD_ESP32_ETHERNETKIT
 	default "esp32-wrover-kit"         if ARCH_BOARD_ESP32_WROVERKIT
 	default "esp32c3-devkit"           if ARCH_BOARD_ESP32C3_DEVKIT
@@ -3237,6 +3247,9 @@ source "boards/xtensa/esp32/common/Kconfig"
 endif
 if ARCH_BOARD_ESP32_DEVKITC
 source "boards/xtensa/esp32/esp32-devkitc/Kconfig"
+endif
+if ARCH_BOARD_TTGO_TWATCH_ESP32
+source "boards/xtensa/esp32/ttgo_twatch_esp32/Kconfig"
 endif
 if ARCH_BOARD_ESP32_ETHERNETKIT
 source "boards/xtensa/esp32/esp32-ethernet-kit/Kconfig"

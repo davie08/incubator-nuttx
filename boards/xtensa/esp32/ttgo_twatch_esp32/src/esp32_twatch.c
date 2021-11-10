@@ -160,8 +160,6 @@ int board_pmu_initialize(FAR const char *devname)
 static int  twatch_ft5x06_attach(FAR const struct ft5x06_config_s *config,
                                 xcpt_t isr, FAR void *arg)
 {
-  printf("twatch_ft5x06_attach %x\n", isr);
-
   /* Just save the handler.  We will use it when EXTI interruptsare enabled */
 
   if (isr)
@@ -185,19 +183,11 @@ static int  twatch_ft5x06_attach(FAR const struct ft5x06_config_s *config,
   return 0;
 }
 
-static int btn_interrupt(int irq, FAR void *context, FAR void *arg)
-{
-  printf("btn_interrupt\n");
-  return 0;
-}
-
 static void twatch_ft5x06_enable(FAR const struct ft5x06_config_s *config,
                                 bool enable)
 {
   int irq = ESP32_PIN2IRQ(GPIO_TOUCH_INT);
   int ret = 0;
-
-  printf("twatch_ft5x06_enable %d\n", enable);
 
   if (enable)
     {
@@ -237,20 +227,17 @@ static void twatch_ft5x06_enable(FAR const struct ft5x06_config_s *config,
 
 static void twatch_ft5x06_clear(FAR const struct ft5x06_config_s *config)
 {
-  printf("twatch_ft5x06_clear\n");
   return;
 }
 
 static void twatch_ft5x06_wakeup(FAR const struct ft5x06_config_s *config)
 {
-  printf("twatch_ft5x06_clear\n");
   return;
 }
 
 static void twatch_ft5x06_nreset(FAR const struct ft5x06_config_s *config,
                                 bool nstate)
 {
-  printf("twatch_ft5x06_clear\n");
   return;
 }
 #endif

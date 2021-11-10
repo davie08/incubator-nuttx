@@ -63,7 +63,66 @@
 #include <nuttx/lcd/st7789.h>
 #endif
 
-struct lcd_dev_s *g_lcd ;
+#ifdef CONFIG_INPUT_FT5X06
+#include <nuttx/input/ft5x06.h>
+#define FT5X06_I2C_ADDRESS 0x38
+#define FT5X06_FREQUENCY  400000
+#define GPIO_TOUCH_INT 38
+#endif
+
+/****************************************************************************
+ * Private Types
+ ****************************************************************************/
+
+struct twatch_ft5x06_config_s
+{
+  xcpt_t          handler;  /* The FT5x06 interrupt handler */
+  FAR void       *arg;      /* Interrupt handler argument */
+};
+
+/****************************************************************************
+ * Private Function Ptototypes
+ ****************************************************************************/
+
+#ifdef CONFIG_INPUT_FT5X06
+#ifndef CONFIG_FT5X06_POLLMODE
+static int  twatch_ft5x06_attach(FAR const struct ft5x06_config_s *config,
+                                xcpt_t isr, FAR void *arg);
+static void twatch_ft5x06_enable(FAR const struct ft5x06_config_s *config,
+                                bool enable);
+static void twatch_ft5x06_clear(FAR const struct ft5x06_config_s *config);
+#endif
+static void twatch_ft5x06_wakeup(FAR const struct ft5x06_config_s *config);
+static void twatch_ft5x06_nreset(FAR const struct ft5x06_config_s *config,
+                                bool state);
+#endif
+
+/****************************************************************************
+ * Private Data
+ ****************************************************************************/
+
+static struct lcd_dev_s *g_lcd ;
+
+#ifdef CONFIG_INPUT_FT5X06
+static struct twatch_ft5x06_config_s g_priv_config =
+{
+  .handler     = NULL,
+  .arg         = NULL,
+};
+
+static const struct ft5x06_config_s g_ft5x06_config =
+{
+  .address   = FT5X06_I2C_ADDRESS,
+  .frequency = FT5X06_FREQUENCY,
+#ifndef CONFIG_FT5X06_POLLMODE
+  .attach    = twatch_ft5x06_attach,
+  .enable    = twatch_ft5x06_enable,
+  .clear     = twatch_ft5x06_clear,
+#endif
+  .wakeup    = twatch_ft5x06_wakeup,
+  .nreset    = twatch_ft5x06_nreset
+};
+#endif
 
 /****************************************************************************
  * Public Functions
@@ -73,7 +132,7 @@ struct lcd_dev_s *g_lcd ;
 int board_pmu_initialize(FAR const char *devname)
 {
   FAR struct battery_charger_dev_s *axp202_dev;
-  struct i2c_master_s *i2c;
+  FAR struct i2c_master_s *i2c;
 
   i2c = esp32_i2cbus_initialize(0);
 
@@ -88,6 +147,130 @@ int board_pmu_initialize(FAR const char *devname)
     }
 
   return -1;
+}
+#endif
+
+#ifdef CONFIG_INPUT_FT5X06
+
+#ifndef CONFIG_FT5X06_DEVMINOR
+  #define CONFIG_FT5X06_DEVMINOR 0
+#endif
+
+#ifndef CONFIG_FT5X06_POLLMODE
+static int  twatch_ft5x06_attach(FAR const struct ft5x06_config_s *config,
+                                xcpt_t isr, FAR void *arg)
+{
+  printf("twatch_ft5x06_attach %x\n", isr);
+
+  /* Just save the handler.  We will use it when EXTI interruptsare enabled */
+
+  if (isr)
+    {
+      /* Just save the address of the handler for now.  The new handler will
+       * be attached when the interrupt is next enabled.
+       */
+
+      syslog(LOG_ERR, "Attaching %p\n", isr);
+      g_priv_config.handler = isr;
+      g_priv_config.arg     = arg;
+    }
+  else
+    {
+      syslog(LOG_ERR, "Detaching %p\n", g_priv_config.handler);
+      twatch_ft5x06_enable(config, false);
+      g_priv_config.handler = NULL;
+      g_priv_config.arg     = NULL;
+    }
+
+  return 0;
+}
+
+static int btn_interrupt(int irq, FAR void *context, FAR void *arg)
+{
+  printf("btn_interrupt\n");
+  return 0;
+}
+
+static void twatch_ft5x06_enable(FAR const struct ft5x06_config_s *config,
+                                bool enable)
+{
+  int irq = ESP32_PIN2IRQ(GPIO_TOUCH_INT);
+  int ret = 0;
+
+  printf("twatch_ft5x06_enable %d\n", enable);
+
+  if (enable)
+    {
+      /* Configure the EXTI interrupt using the SAVED handler */
+
+      if (NULL != g_priv_config.handler)
+        {
+          /* Make sure the interrupt is disabled */
+
+          esp32_gpioirqdisable(irq);
+
+          ret = irq_attach(irq, g_priv_config.handler, g_priv_config.arg);
+          if (ret < 0)
+            {
+              syslog(LOG_ERR, "ERROR: irq_attach() failed: %d\n", ret);
+              return ;
+            }
+
+          /* Configure the interrupt for rising and falling edges */
+
+          esp32_gpioirqenable(irq, CHANGE);
+        }
+      else
+        {
+          esp32_gpioirqdisable(irq);
+        }
+    }
+  else
+    {
+      /* Configure the EXTI interrupt with a NULL handler to disable it */
+
+     esp32_gpioirqdisable(irq);
+    }
+
+  return;
+}
+
+static void twatch_ft5x06_clear(FAR const struct ft5x06_config_s *config)
+{
+  printf("twatch_ft5x06_clear\n");
+  return;
+}
+
+static void twatch_ft5x06_wakeup(FAR const struct ft5x06_config_s *config)
+{
+  printf("twatch_ft5x06_clear\n");
+  return;
+}
+
+static void twatch_ft5x06_nreset(FAR const struct ft5x06_config_s *config,
+                                bool nstate)
+{
+  printf("twatch_ft5x06_clear\n");
+  return;
+}
+#endif
+
+int board_touch_initialize(void)
+{
+  FAR struct i2c_master_s *i2c;
+
+  i2c = esp32_i2cbus_initialize(1);
+
+  if (!i2c)
+    {
+      return -1;
+    }
+
+  esp32_configgpio(GPIO_TOUCH_INT, INPUT_FUNCTION_3 | PULLUP);
+
+  ft5x06_register(i2c, &g_ft5x06_config, CONFIG_FT5X06_DEVMINOR);
+
+  return 0;
 }
 #endif
 

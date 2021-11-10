@@ -138,6 +138,10 @@ int esp32_bringup(void)
   board_display_initialize();
 #endif
 
+#ifdef CONFIG_INPUT_FT5X06
+  board_touch_initialize();
+#endif
+
 #ifdef CONFIG_ESP32_AES_ACCELERATOR
   ret = esp32_aes_init();
   if (ret < 0)

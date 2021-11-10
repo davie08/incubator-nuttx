@@ -143,5 +143,9 @@ int board_pmu_initialize(FAR const char *devname);
 int board_display_initialize(void);
 #endif
 
+#ifdef CONFIG_INPUT_FT5X06
+int board_touch_initialize(void);
+#endif
+
 #endif /* __ASSEMBLY__ */
 #endif /* __BOARDS_XTENSA_ESP32_TTGO_TWATCH_ESP32_SRC_TTGO_TWATCH_ESP32_H */
